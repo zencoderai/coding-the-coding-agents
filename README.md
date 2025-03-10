@@ -1,2 +1,3 @@
-# coding-the-coding-agents
-Code for the talk on coding the ai coding agents
+# AI Coding agents and how to code them
+
+Code for the talk on coding the AI coding agents

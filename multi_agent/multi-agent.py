@@ -31,7 +31,7 @@ system_prompt = (
     " respond with FINISH."
 )
 
-llm = ChatAnthropic(model="claude-3-5-sonnet-latest", max_retries=5)
+llm = ChatAnthropic(model="claude-3-7-sonnet-20250219", max_retries=5)
 
 bash_tool = ShellTool()
 search_tool = BraveSearch.from_api_key(api_key=os.getenv("BRAVE_API_KEY"), search_kwargs={"count": 3})
@@ -142,6 +142,39 @@ class MultiAgent:
         self.graph = builder.compile()
 
 
+def formatting(s):
+    node, event = s
+    if len(node) == 0:
+        print("Entering graph")
+        print(event)
+        return
+    agent_type = node[0].split(':')[0]
+    print(f"\n\033[92mCurrent agent\033[0m - {agent_type}")
+    event_type = list(event.keys())[0]
+    if event_type == "tools":
+        if event[event_type]['messages'][0].content:
+            print(f"\033[94mTool call result\033[0m: {event[event_type]['messages'][0].content}")
+    elif event_type == "agent":
+        content = event[event_type]['messages'][0].content
+        if isinstance(content, str):
+            print(f"\033[92m{agent_type}\033[0m: {content}")
+            return
+        agent_messages = list(filter(lambda x: x["type"] == "text", content))
+        if agent_messages:
+            print(f"\033[92m{agent_type}\033[0m: {agent_messages[0]['text']}")
+        tools = list(filter(lambda x: x["type"] == "tool_use", content))
+        if tools:
+            for tool in tools:
+                if tool["input"]:
+                    print(f"\033[92m{agent_type}\033[0m: calling tool \033[93m{tool['name']} \033[0mwith the following input:")
+                    for key, value in tool["input"].items():
+                        print(f"\033[96m{key}\033[0m: \033[97m{value}\033[0m")
+                else:
+                    print(f"\033[92m{agent_type}\033[0m: using tool \033[93m{tool['name']}\033[0m")
+    else:
+        print("event", event)
+
+
 async def main():
     user_prompt = (
         "I want to build a website for a conference, it should have several pages, "
@@ -159,8 +192,8 @@ async def main():
                 subgraphs=True,
                 stream_mode="values",
         ):
-            print(s)
-            print("----")
+            formatting(s)
+            print("-" * 30)
     except Exception as e:
         print(f"An error occurred: {e}")
 

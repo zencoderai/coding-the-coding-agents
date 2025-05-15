@@ -8,17 +8,6 @@
         "."
       ]
     },
-    "brave-search": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "--env-file",
-        "../.env",
-        "mcp/brave-search"
-      ]
-    },
     "fetch": {
       "command": "python",
       "args": ["-m", "mcp_server_fetch"]

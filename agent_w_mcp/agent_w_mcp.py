@@ -20,7 +20,11 @@ ANTHROPIC_WEB_SEARCH = [
     }
 ]
 MAX_TOKENS = 8192
-MODEL = "claude-3-7-sonnet-20250219"
+MODEL = "claude-sonnet-4-20250514"
+SYSTEM_PROMPT = """
+For maximum efficiency, whenever you need to perform multiple independent operations, invoke all relevant tools simultaneously rather than sequentially.
+Put DONE to the message when you are done with the task
+"""
 
 
 class MCPClient:
@@ -78,7 +82,7 @@ class MCPClient:
             messages=messages,
             tools=available_tools,
             stop_sequences=["DONE"],
-            system="Put DONE to the message when you are done with the task"
+            system=SYSTEM_PROMPT
         )
 
         counter = 1
@@ -155,7 +159,7 @@ class MCPClient:
                 messages=messages,
                 tools=available_tools,
                 stop_sequences=["DONE"],
-                system="Put DONE to the message when you are done with the task"
+                system=SYSTEM_PROMPT
             )
 
             counter += 1

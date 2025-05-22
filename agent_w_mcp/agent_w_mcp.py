@@ -90,6 +90,7 @@ class MCPClient:
             print(f"\n\033[95mLoop\033[0m: {counter}")
 
             tool_results = []
+            assistant_message_contents = []
             # for anthropic's web search tool the agent outputs multipls text blocks, so combining them into one
             is_previous_content_text = False
             all_texts = []
@@ -97,14 +98,14 @@ class MCPClient:
                 if content.type == "text" and content.text:
                     message = content.text.strip("\n").rstrip()
                     if message:
-                        messages.append({
-                            "role": "assistant",
-                            "content": message
+                        assistant_message_contents.append({
+                            "type": "text",
+                            "text": message
                         })
                         all_texts.append(message)
                     if not is_previous_content_text:
                         is_previous_content_text = True
-                    elif content.type == "tool_use":
+                elif content.type == "tool_use":
                     # reset text compilation
                     is_previous_content_text = False
                     if all_texts:
@@ -112,18 +113,15 @@ class MCPClient:
                         all_texts = []
                     tool_name = content.name
                     tool_args = content.input
-                    result = await tool2session[tool_name].call_tool(tool_name, tool_args)
-                    tool_results.append({"call": tool_name, "result": result if result else "NO RETURN VALUE"})
                     print(f"\033[96mCalling tool\033[0m \033[93m{tool_name}\033[0m \033[96mwith the following input\033[0m: \033[93m{tool_args}\033[0m")
+                    result = await tool2session[tool_name].call_tool(tool_name, tool_args)
+                    tool_results.append({"type": "tool_result", "tool_use_id": content.id, "content": result.content[0].text})
                     print(f"\033[94mTool call result\033[0m: {result.content[0].text}")
-                    if hasattr(content, 'text') and content.text:
-                        messages.append({
-                            "role": "assistant",
-                            "content": content.text.rstrip()
-                        })
-                    messages.append({
-                        "role": "user",
-                        "content": result.content
+                    assistant_message_contents.append({
+                        "type": "tool_use",
+                        "id": content.id,
+                        "name": tool_name,
+                        "input": tool_args
                     })
                 elif content.type == "server_tool_use":
                     # reset text compilation
@@ -135,9 +133,9 @@ class MCPClient:
                     tool_args = content.input
                     print(f"\033[96mCalling remote tool\033[0m \033[93m{tool_name}\033[0m \033[96mwith the following input\033[0m: \033[93m{tool_args}\033[0m")
                     if hasattr(content, 'text') and content.text:
-                        messages.append({
-                            "role": "assistant",
-                            "content": content.text.rstrip()
+                        assistant_message_contents.append({
+                            "type": "text",
+                            "text": content.text.rstrip()
                         })
                 elif content.type == "web_search_tool_result":
                     # reset text compilation
@@ -148,10 +146,20 @@ class MCPClient:
                     for ws_result in content.content:
                         print(f"\033[94mGot web-search result\033[0m, search request - \033[93m{ws_result['title']}\033[0m, URL - \033[93m{ws_result['url']}\033[0m")
                     if hasattr(content, 'text') and content.text:
-                        messages.append({
-                            "role": "assistant",
-                            "content": content.text.rstrip()
+                        assistant_message_contents.append({
+                            "type": "text",
+                            "text": content.text.rstrip()
                         })
+
+            messages.append({
+                "role": "assistant",
+                "content": assistant_message_contents
+            })
+            if tool_results:
+                messages.append({
+                    "role": "user",
+                    "content": tool_results
+                })
 
             response = self.anthropic.messages.create(
                 model=MODEL,
@@ -166,14 +174,9 @@ class MCPClient:
             if response.stop_reason == "stop_sequence":
                 if response.content and response.content[0].text:
                     all_texts.append(response.content[0].text.strip("\n"))
-                print("\033[92mAgent\033[0m: ", "\n".join(all_texts))
+                if all_texts:
+                    print("\033[92mAgent\033[0m: ", "\n".join(all_texts))
                 break
-            elif response.content and response.content[0].type == "text" and not response.content[0].text.rstrip():
-                # some encouragement for Claude
-                messages.append({
-                        "role": "user",
-                        "content": "Go on"
-                    })
             else:
                 if all_texts:
                     print("\033[92mAgent\033[0m: ", "\n".join(all_texts))

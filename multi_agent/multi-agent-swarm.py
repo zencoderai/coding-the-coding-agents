@@ -145,7 +145,7 @@ def formatting(s):
         print(event)
         return
     agent_type = node[0].split(':')[0]
-    print(f"\n\033[92mCurrent agent\033[0m - {agent_type}")
+    print(f"\n\033[92mCurrent agent\033[0m - \033[91m{agent_type}\033[0m")
     event_type = list(event.keys())[0]
     if event_type == "tools":
         if event[event_type]['messages'][0].content:

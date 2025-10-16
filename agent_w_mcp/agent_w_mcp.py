@@ -20,7 +20,7 @@ ANTHROPIC_WEB_SEARCH = [
     }
 ]
 MAX_TOKENS = 8192
-MODEL = "claude-sonnet-4-20250514"
+MODEL = "claude-sonnet-4-5-20250929"
 SYSTEM_PROMPT = """
 For maximum efficiency, whenever you need to perform multiple independent operations, invoke all relevant tools simultaneously rather than sequentially.
 Put DONE to the message when you are done with the task

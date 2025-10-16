@@ -20,7 +20,8 @@ load_dotenv()
 warnings.filterwarnings('ignore')
 
 
-llm = ChatAnthropic(model="claude-sonnet-4-20250514", max_retries=5, max_tokens=16384, temperature=0)
+sonnet = ChatAnthropic(model="claude-sonnet-4-5-20250929", max_retries=5, max_tokens=16384, temperature=0)
+haiku = ChatAnthropic(model="claude-haiku-4-5-20251001", max_retries=5, max_tokens=16384, temperature=0)
 
 bash_tool = ShellTool()
 search_tool = BraveSearch.from_api_key(api_key=os.getenv("BRAVE_API_KEY"), search_kwargs={"count": 3})
@@ -30,10 +31,7 @@ async_browser = create_async_playwright_browser()
 toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=async_browser)
 pw_tools = toolkit.get_tools()
 
-human = load_tools(
-    ["human"],
-    llm=llm,
-)
+human = load_tools(["human"])
 
 transfer_to_backend = create_handoff_tool(agent_name="backend", description="Transfer control to the backend agent.")
 transfer_to_frontend = create_handoff_tool(agent_name="frontend", description="Transfer control to the frontend agent.")
@@ -57,7 +55,7 @@ product_manager_prompt = (
 
 # Prompts for specialists: execute only their labelled steps, hand back control, and ask human if needed
 backend_prompt = (
-    "You are a senior backend developer. Implement tasks assigned to you by the product manager. "
+    "You are a senior backend developer. Implement task assigned to you by the product manager. "
     "For each step labelled 'backend': "
     "1. Produce a detailed sub‑plan describing how you will accomplish the step. "
     "2. Execute your sub‑plan using the available tools. "
@@ -67,7 +65,7 @@ backend_prompt = (
     "Use the human tool if you need to ask the user a question."
 )
 frontend_prompt = (
-    "You are a senior frontend developer. Implement tasks assigned to you by the product manager. "
+    "You are a senior frontend developer. Implement task assigned to you by the product manager. "
     "For each step labelled 'frontend': "
     "1. Produce a detailed sub‑plan describing how you will accomplish the step. "
     "2. Execute your sub‑plan using the available tools. "
@@ -77,7 +75,7 @@ frontend_prompt = (
     "Use the human tool if you need to ask the user a question."
 )
 devops_prompt = (
-    "You are a senior devops engineer. Implement tasks assigned to you by the product manager. "
+    "You are a senior devops engineer. Implement task assigned to you by the product manager. "
     "For each step labelled 'devops': "
     "1. Produce a detailed sub‑plan describing how you will accomplish the step. "
     "2. Execute your sub‑plan using the available tools. "
@@ -87,7 +85,7 @@ devops_prompt = (
     "Use the human tool if you need to ask the user a question."
 )
 qa_prompt = (
-    "You are a senior QA engineer. Implement tasks assigned to you by the product manager. "
+    "You are a senior QA engineer. Implement task assigned to you by the product manager. "
     "For each step labelled 'qa': "
     "1. Produce a detailed sub‑plan describing how you will accomplish the step. "
     "2. Execute your sub‑plan using the available tools. "
@@ -99,35 +97,36 @@ qa_prompt = (
 
 class MultiAgentSwarm:
     def __init__(self):
-        self.llm = llm
+        self.sonnet = sonnet
+        self.haiku = haiku
 
     async def create_swarm(self):
         backend_agent = create_react_agent(
-            self.llm,
+            self.haiku,
             tools=available_tools + [transfer_to_product_manager],
             prompt=backend_prompt,
             name="backend",
         )
         frontend_agent = create_react_agent(
-            self.llm,
+            self.haiku,
             tools=available_tools + [transfer_to_product_manager],
             prompt=frontend_prompt,
             name="frontend",
         )
         devops_agent = create_react_agent(
-            self.llm,
+            self.haiku,
             tools=available_tools + [transfer_to_product_manager],
             prompt=devops_prompt,
             name="devops",
         )
         qa_agent = create_react_agent(
-            self.llm,
+            self.haiku,
             tools=available_tools + [transfer_to_product_manager],
             prompt=qa_prompt,
             name="qa",
         )
         product_manager_agent = create_react_agent(
-            self.llm,
+            self.sonnet,
             tools=available_tools + [transfer_to_backend, transfer_to_frontend, transfer_to_devops, transfer_to_qa],
             prompt=product_manager_prompt,
             name="product_manager",

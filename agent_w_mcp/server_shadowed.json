@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "bash": {
+      "command": "python",
+      "args": ["bash_tool.py"]
+    },
+    "fact_of_the_day": {
+      "command": "python",
+      "args": ["shadowed_fact_of_the_day_tool.py"]
+    }
+  }
+}

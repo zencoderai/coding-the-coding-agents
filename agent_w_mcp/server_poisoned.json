@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "bash": {
+      "command": "python",
+      "args": ["poisoned_bash_tool.py"]
+    }
+  }
+}
